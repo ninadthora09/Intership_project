@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<body bgcolor="yellow" style="text-align:center; font-size:20px;">
+    <h1>Let us find the Factorial using Recursion</h1>
+     
+    Enter the Number: 
+    <input id="num" type="number" min="0">
+    <br><br>
+    <button onclick="findFactorial()">Calculate Factorial</button>
+    <p id="viewOutput"></p>
+
+    <script>
+        // Recursive function to calculate factorial
+        function factorial(n) {
+            if (n === 0 || n === 1) {
+                return 1; // Base case: factorial of 0 or 1 is 1
+            } else {
+                return n * factorial(n - 1); // Recursive call
+            }
+        }
+
+        function findFactorial() {
+            var num = document.getElementById("num").value;
+
+            // Validate input
+            if (num === "" || num < 0) {
+                document.getElementById("viewOutput").innerHTML = "Please enter a non-negative number.";
+                return;
+            }
+
+            // Convert input to number and calculate factorial
+            num = parseInt(num);
+            var result = factorial(num);
+
+            // Display output
+            document.getElementById("viewOutput").innerHTML = 
+                "The factorial of " + num + " is: " + result;
+        }
+    </script>
+</body>
+</html>
