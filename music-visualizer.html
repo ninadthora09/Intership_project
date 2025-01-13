@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attractive Waveform Visualizer</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: linear-gradient(135deg, #a8e0ff, #ffd1e1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            font-family: 'Arial', sans-serif;
+            color: #333333;
+            animation: gradient 15s ease infinite;
+        }
+
+        @keyframes gradient {
+            0% { background: #a8e0ff; }
+            25% { background: #ffd1e1; }
+            50% { background: #ffe0b2; }
+            75% { background: #a8e0ff; }
+            100% { background: #ffd1e1; }
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        input[type="file"] {
+            margin: 20px;
+            padding: 15px;
+            border: none;
+            border-radius: 25px;
+            background-color: #ff4081;
+            color: #ffffff;
+            font-size: 18px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        input[type="file"]:hover {
+            background-color: #f50057;
+            transform: scale(1.05);
+        }
+
+        canvas {
+            width: 100%;
+            height: 300px;
+            border-radius: 15px;
+            margin-top: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            background-color: white;
+        }
+
+        audio {
+            margin-top: 20px;
+            display: block;
+            border: none;
+            border-radius: 25px;
+            background-color: #ff4081;
+            color: #ffffff;
+            padding: 10px;
+            font-size: 18px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        button {
+            margin: 20px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background-color: #ff4081;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #f50057;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎶 Waveform Visualizer 🎶</h1>
+    <input type="file" id="audio-upload" accept="audio/*" />
+    <audio id="audio" controls style="display: none;"></audio>
+    <canvas id="canvas"></canvas>
+    <button id="save-file" style="display: none;">Save Audio File</button>
+
+    <script>
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const analyser = audioContext.createAnalyser();
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const audioElement = document.getElementById('audio');
+        const fileInput = document.getElementById('audio-upload');
+        const saveFileButton = document.getElementById('save-file');
+        let audioBlob;
+
+        canvas.width = window.innerWidth;
+        canvas.height = 300;
+
+        function visualize() {
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+
+            function draw() {
+                requestAnimationFrame(draw);
+                analyser.getByteTimeDomainData(dataArray);
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#ff4081';
+                ctx.beginPath();
+
+                const sliceWidth = canvas.width / bufferLength;
+                let x = 0;
+
+                for (let i = 0; i < bufferLength; i++) {
+                    const v = dataArray[i] / 128.0;
+                    const y = v * canvas.height / 2;
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                    x += sliceWidth;
+                }
+
+                ctx.lineTo(canvas.width, canvas.height / 2);
+                ctx.stroke();
+            }
+
+            draw();
+        }
+
+        fileInput.addEventListener('change', async function() {
+            const file = fileInput.files[0];
+            if (file) {
+                const fileURL = URL.createObjectURL(file);
+                audioElement.src = fileURL;
+                audioElement.style.display = 'block';
+                audioBlob = file; // Store the audio file for later saving
+
+                const source = audioContext.createMediaElementSource(audioElement);
+                source.connect(analyser);
+                analyser.connect(audioContext.destination);
+                visualize();
+
+                // Show save button
+                saveFileButton.style.display = 'block';
+            }
+        });
+
+        audioElement.addEventListener('play', () => {
+            audioContext.resume().then(() => {
+                audioElement.play();
+            });
+        });
+
+        saveFileButton.addEventListener('click', async () => {
+            if (audioBlob) {
+                const fileHandle = await window.showSaveFilePicker({
+                    suggestedName: audioBlob.name,
+                    types: [{
+                        description: 'Audio Files',
+                        accept: {
+                            'audio/*': ['.mp3', '.wav', '.ogg']
+                        },
+                    }],
+                });
+                const writableStream = await fileHandle.createWritable();
+                await writableStream.write(audioBlob);
+                await writableStream.close();
+            }
+        });
+    </script>
+</body>
+</html>
